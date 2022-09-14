@@ -1,0 +1,310 @@
+/*
+
+Basc usage:
+<pre><code>
+<!––
+    your code here in a single block comment
+––>
+</code></pre>
+
+With line numbers starting at 1
+<pre data-lineNumbers><code>
+<!––
+    your code here in a single block comment
+––>
+</code></pre>
+
+With line numbers starting at 21
+<pre data-lineNumbers=21><code>
+<!––
+    your code here in a single block comment
+––>
+</code></pre>
+
+With syntax highlighting
+<pre data-syntax="html"><code>
+<!––
+    your code here in a single block comment
+––>
+</code></pre>
+
+With copy code button added
+<pre data-copyable><code>
+<!––
+    your code here in a single block comment
+––>
+</code></pre>
+
+NOTE:
+If you have to show HTML comments <!–– and ––>,
+use n-dashes (–); otherwise they will be interpreted
+as actual comments. However, if you also need to
+copy to clipboard, then the n-dashes will copy and
+the comment will not work in the user's code. For
+that reason, n-dashes will be converted to regular
+hyphens in the copy to clipboard function if HTML
+comments are detected.
+
+*/
+
+;(function(window){
+
+    //validate
+    if (!window) return;
+    if (!window.document || !window.document.documentElement){
+        if (window.console && "function" === typeof window.console.warn) console.warn("Browser document required for render-code.js");
+        return;
+    }
+
+    //settings
+    const tagSelector = "pre code";
+
+    //init
+    window.document.addEventListener("DOMContentLoaded", init);
+	function init(){
+		window.document.querySelectorAll(tagSelector).forEach(setup);
+	}
+
+	function setup(tag){
+		var originalTag = tag,
+            originalCode = tag.childNodes[1].textContent
+					.trim()
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;"),
+            code = "<div style='min-height:1.15em;'>" + originalCode
+                    .split(/[\r\n]/)
+                    .join("</div><div style='min-height:1.15em;'>") + "</div>",
+            addLineNumbers = tag.parentElement.hasAttribute("data-lineNumbers"),
+			addSyntax = tag.parentElement.hasAttribute("data-syntax"),
+			addCopyable = tag.parentElement.hasAttribute("data-copyable");
+
+        /* LINE NUMBERS */
+		if (addLineNumbers){
+            var numLines = originalCode.split(/[\r\n]/).length,
+                lineNumbers = (function(){
+                    let dataLineNum = +tag.parentElement.getAttribute("data-lineNumbers"),
+						startingNum = dataLineNum || 1,
+                        html = `<section style="float:left;padding-right:5px;border-right:1px solid black;margin-right:10px;text-align:right;user-select:none;">`;
+                    for (let i=startingNum; i<startingNum+numLines; i++){
+                        html += "<div style='min-height:1.15em;'>" + i + "</div>";
+                    }
+                    html += "</section><section></section>";
+                    return html;
+                })();
+            tag.innerHTML = lineNumbers;
+            tag = tag.querySelector("section:last-child");
+        }
+
+        /* SYNTAX HIGHLIGHTING */
+        if (addSyntax){
+			let syntax = originalTag.parentElement.getAttribute("data-syntax").trim().toLowerCase();
+			if (syntax.includes("html")) code = highlightHtml(code); //HTML, and embedded CSS and JS
+			else if (syntax.includes("css")) code = highlightCss(code);
+			else if (syntax.includes("js")) code = highlightJs(code);
+		}
+
+        //insert formatted code
+        tag.innerHTML = code;
+
+        /* COPY CODE TO CLIPBOARD BUTTON */
+		if (addCopyable){
+			originalTag.parentElement.outerHTML += "<button id='copyCodeToClipboardButton'>Copy to Clipboard</button>";
+			let button = window.document.querySelector("#copyCodeToClipboardButton");
+			button.removeAttribute("id");
+			button.addEventListener("click", copyCodeToClipboard);
+		}
+	}
+
+    function copyCodeToClipboard(e){
+		let textarea = window.document.createElement("textarea"),
+            codeEl = e.target.previousElementSibling.querySelector("section:last-child") ||
+                     e.target.previousElementSibling,
+            html = codeEl.innerHTML.replace(/<\/div>/g, "</div>\n"),
+            div = window.document.createElement("div");
+        div.innerHTML = html;
+        let text = div.textContent;
+        text = text.replace(/<!––/g, "<!--").replace(/––>/g, "-->");
+		textarea.value = text;
+		window.document.body.appendChild(textarea);
+		textarea.select();
+		try {
+			if (window.document.execCommand("copy")) e.target.textContent = "Copied!";
+			else e.target.textContent = "Copy Failed";
+		}
+		catch (err){
+			e.target.textContent = "Copy Failed";
+		}
+		window.document.body.removeChild(textarea);
+		//return button text to normal after five seconds
+		setTimeout(() => {
+			e.target.textContent = "Copy to Clipboard";
+		}, 5000);
+	}
+
+    /*********** HTML HIGHLIGHTING *************/
+    function highlightHtml(code){
+		let color = highlightSettings.html,
+			inStyle = false,
+			inScript = false;
+
+		//tags (non-greedy matching)
+        code = code.replace(/&lt;(.*?)&gt;/g, htmlSegment);
+		//comments (looking for n-dashes, see notes above)
+		code = code.replace(/&lt;!––(.+)––&gt;/g, "<span data-comment>&lt;!--$1--&gt;</span>");
+		//css
+		code = code.replace(/(style.*<\/span><span data-tagBracket>&gt;<\/span>)(.*)(<span data-tagBracket>&lt;<\/span><span data-tagBracket>\/<\/span><span data-tagName>style)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightCss(capture2) + capture3);
+		//javascript
+		code = code.replace(/(script.*<\/span><span data-tagBracket>&gt;<\/span>)(.*)(<span data-tagBracket>&lt;<\/span><span data-tagBracket>\/<\/span><span data-tagName>script)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightJs(capture2) + capture3);
+
+		function htmlSegment(match, capture, index){
+			let originalInStyle = inStyle,
+				originalInScript = inScript,
+				replaced = "<span data-tagBracket>&lt;</span>";
+			replaced += htmlTag(capture);
+			replaced += "<span data-tagBracket>&gt;</span>";
+			//if we've only just entered <style> or <script>
+			//be sure to include the actual <style> or <script> tag first,
+			//otherwise ignore any matches not actually in html
+			if (inStyle && originalInStyle) return match;
+			if (inScript && originalInScript) return match;
+			return replaced;
+		}
+		function htmlTag(tag){
+			let originalTag = tag,
+				replaced = "";
+			//slash
+			if (tag[0] === "/"){
+				replaced += "<span data-tagBracket>/</span>";
+				tag = tag.slice(1);
+			}
+			//tag name
+			let tagName;
+			if (tag.includes(" ")){
+				tagName = tag.slice(0, tag.indexOf(" "));
+				tag = tag.slice(tag.indexOf(" "));
+			}
+			else {
+				tagName = tag;
+				tag = "";
+			}
+			replaced += "<span data-tagName>" + tagName + "</span>";
+			if (tagName.toLowerCase() === "style") inStyle = !inStyle;
+			if (tagName.toLowerCase() === "script") inScript = !inScript;
+			return replaced + htmlAttributes(tag);
+		}
+		function htmlAttributes(attributes){
+			if (!attributes.trim().length) return "";
+			let replaced = "<span data-attributeName>";
+            replaced += attributes.replace(/(=.*)/g, htmlAttributeValue);
+            replaced += "</span>";
+			return replaced;
+		}
+        function htmlAttributeValue(match, value){
+            return "<span data-attributeEqual>=</span><span data-attributeValue>" + value.slice(1) + "</span>";
+        }
+
+		for (let prop in color){
+			let regex = new RegExp("data\-" + prop, "gi");
+			code = code.replace(regex, "style=color:" + color[prop] + ";");
+		}
+
+		return code;
+	}
+
+    /*********** CSS HIGHLIGHTING *************/
+	function highlightCss(code){
+		let color = highlightSettings.css;
+
+		//rulesets
+		code = code.replace(/([^{}]*){([^{}]*)}/g, cssRuleSet);
+		//default (for @ lines)
+		code = "<span data-atLine>" + code + "</span>";
+		//@word (@media, @keyframes, @import, etc.)
+		code = code.replace(/(@\w+)/gi, "<span data-atWord>$1</span>");
+
+		function cssRuleSet(match, capture1, capture2, index){
+			return cssSelector(capture1) + "<span data-ruleSetCurlyBrace>{</span>" + cssRules(capture2) + "<span data-ruleSetCurlyBrace>}</span>";
+		}
+
+		function cssSelector(selector){
+			selector = selector.replace(/(\s[^\w\d]\s)/g, "<span data-selectorSyntax>$1</span>");
+			selector = selector.replace(/(#[\w\d-]+)/g, "<span data-selectorId>$1</span>");
+			selector = selector.replace(/(\.[\w\d-]+)/g, "<span data-selectorClass>$1</span>");
+			selector = selector.replace(/(:[\w\d]+)/g, "<span data-selectorPseudoClass>$1</span>");
+			selector = selector.replace(/\[(.*)\]/g, "<span data-selectorSquareBracket>[</span><span data-selectorAttribute>$1</span><span data-selectorSquareBracket>]</span>");
+			return "<span data-selectorDefault>" + selector + "</span>";
+		}
+
+		function cssRules(rules){
+			rules = rules.replace(/(.+):(.+)/g, "<span data-ruleName>$1</span><span data-ruleSyntax>:</span><span data-ruleValueDefault>$2</span>");
+			rules = rules.replace(/(\-?\d+\.?\d*\w*%?)/g, "<span data-ruleValueNumber>$1</span>");
+			rules = rules.replace(/([\(\),;])/g, "<span data-ruleSyntax>$1</span>");
+			rules = rules.replace(/!important/gi, "<span data-ruleImportant>!important</span>");
+			return rules;
+		}
+
+		for (let prop in color){
+			let regex = new RegExp("data\-" + prop, "gi");
+			code = code.replace(regex, "style=color:" + color[prop] + ";");
+		}
+
+		return code;
+	}
+
+    /*********** JAVASCRIPT HIGHLIGHTING *************/
+    /*********** unfinished *************/
+	function highlightJs(code){
+		let reservedWords = ["abstract", "await", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete", "do", "double", "else", "enum", "export", "extends", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "typeof", "var", "void", "volatile", "while", "with", "yield"],
+			literals = ["false", "null", "true", "undefined"],
+            color = highlightSettings.js;
+
+        // for (let prop in color){
+		// 	let regex = new RegExp("data\-" + prop, "gi");
+		// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
+		// }
+
+		return code;
+	}
+
+	/*********** COLORS *************/
+	const highlightSettings = {
+		html: {
+			tagBracket: "chocolate",
+			tagName: "tomato",
+			attributeName: "teal",
+			attributeEqual: "chocolate",
+			attributeValue: "mediumblue",
+			comment: "silver",
+            entity: "lime"
+		},
+		css: {
+			selectorDefault: "darkorchid",
+			selectorClass: "darkviolet",
+			selectorId: "darkmagenta",
+			selectorSyntax: "darkcyan",
+			selectorPseudoClass: "indianred",
+			selectorSquareBracket: "crimson",
+			selectorAttribute: "indianred",
+			ruleSetCurlyBrace: "darkcyan",
+			ruleName: "indigo",
+			ruleValueDefault: "mediumvioletred",
+			ruleValueNumber: "royalblue",
+			ruleSyntax: "maroon",
+			ruleImportant: "crimson",
+			atWord: "purple",
+			atLine: "hotpink",
+			comment: "grey"
+		},
+		js: {
+			default: "red",
+			reservedWord: "red",
+			literal: "red",
+			number: "red",
+			comment: "grey"
+		}
+	};
+
+	/************************/
+
+})(window);
