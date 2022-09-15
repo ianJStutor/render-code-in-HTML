@@ -1,6 +1,6 @@
 # Render Code in HTML
 
-## Ian Marshall
+## [Ian Marshall](https://ianjstutor.github.io/ian-marshall/)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
@@ -13,6 +13,14 @@
 An interesting approach to displaying code snippets in HTML. Who knew you could access HTML comments using JavaScript?
 
 Built with vanilla JavaScript, my favorite flavor!
+
+### History
+
+This version is adapted from my 2008 legacy code. The original HTML and CSS syntax parser (using RegEx) still works. But I never did finish my JavaScript tokenizer. (It's a tough task.) This time, I used an AST (Abstract Syntax Tree) library to help: [Esprima](https://esprima.org/). 
+
+### Dependency
+
+For JavaScript parsing, I'm using [Esprima](https://esprima.org/). But using it is optional. The only loss is syntax highlighting in JavaScript. Syntax highlighting is still available in HTML and CSS (no dependencies). Without Esprima, rendered JavaScript code will print in black text on a white background (light mode) or white text on an off-black background (dark mode).
 
 ### Usage
 
