@@ -1,5 +1,19 @@
 /*
 
+if (window.esprima) {
+    ...
+    const syntaxArray = esprima.tokenize(code);
+}
+
+*/
+
+
+
+
+
+
+/*
+
 Basc usage:
 <pre><code>
 <!––
