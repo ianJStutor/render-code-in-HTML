@@ -1,0 +1,107 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Rubik+Dirt&display=swap'); */
+
+:root {
+    --black: #000;
+    --off-black: #1a1a1a;
+    --grey: #999;
+    --light: #eee;
+    --canvas-color-dark: var(--black);
+    --canvas-color-mid: var(--grey);
+    --canvas-color-light: var(--light);
+    --highlight: rebeccapurple;
+    --highlight-light: #c2add6;
+}
+
+html {
+    background: var(--off-black);
+}
+
+body {
+    margin: 0 auto;
+    max-width: 1000px;
+    font-family: sans-serif;
+}
+
+main {
+    text-align: center;
+    padding-bottom: 100px;
+}
+
+h1, h2 {
+    margin: 0;
+    font-family: 'Rubik Dirt', cursive;
+    font-weight: 400;
+    text-align: center;
+    color: var(--light);
+    cursor: default;
+    text-shadow: -1px -1px 2px var(--highlight),
+                 -1px  1px 2px var(--highlight),
+                  1px -1px 2px var(--highlight),
+                  1px  1px 2px var(--highlight);
+}
+
+h1 {
+    font-size: min(60px, 20vw);
+}
+h2 {
+    font-size: min(30px, 18vw);
+}
+h3 {
+    color: var(--light);
+    font-size: min(18px, 12vw);
+    line-height: 30px;
+    text-align: center;
+    padding: 15px;
+    margin: 20px 0;
+    border-top: 1px solid var(--light);
+    border-bottom: 1px solid var(--light);
+}
+
+p {
+    text-align: center;
+    color: var(--light);
+    line-height: 1.75em;
+}
+
+a {
+    color: inherit;
+}
+
+input {
+    width: 90%;
+    max-width: 300px;
+    font-size: 2em;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin: 50px 0 20px;
+}
+
+output {
+    background-color: var(--highlight-light);
+    width: 90%;
+    max-width: 500px;
+    height: 200px;
+    display: block;
+    margin: 20px auto;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+button {
+    font-size: 2em;
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 2px solid var(--highlight);
+    background-color: var(--highlight-dark);
+    color: var(--light);
+    cursor: pointer;
+    transition: 0.25s;
+}
+
+button:hover {
+    background-color: var(--highlight);
+}
+
+*::selection {
+    background-color: var(--highlight-light);
+}
