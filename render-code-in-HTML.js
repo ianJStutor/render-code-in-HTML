@@ -144,25 +144,25 @@ comments are detected.
 
     /*********** HTML HIGHLIGHTING *************/
     function highlightHtml(code){
-		let color = highlightSettings.html,
-			inStyle = false,
+		// let color = highlightSettings.html,
+		let inStyle = false,
 			inScript = false;
 
 		//tags (non-greedy matching)
         code = code.replace(/&lt;(.*?)&gt;/g, htmlSegment);
 		//comments (looking for n-dashes, see notes above)
-		code = code.replace(/&lt;!––(.+)––&gt;/g, "<span data-comment>&lt;!--$1--&gt;</span>");
+		code = code.replace(/&lt;!––(.+)––&gt;/g, "<span data-code-comment>&lt;!--$1--&gt;</span>");
 		//css
-		code = code.replace(/(style.*<\/span><span data-tagBracket>&gt;<\/span>)(.*)(<span data-tagBracket>&lt;<\/span><span data-tagBracket>\/<\/span><span data-tagName>style)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightCss(capture2) + capture3);
+		code = code.replace(/(style.*<\/span><span data-code-tagBracket>&gt;<\/span>)(.*)(<span data-code-tagBracket>&lt;<\/span><span data-code-tagBracket>\/<\/span><span data-code-tagName>style)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightCss(capture2) + capture3);
 		//javascript
-		code = code.replace(/(script.*<\/span><span data-tagBracket>&gt;<\/span>)(.*)(<span data-tagBracket>&lt;<\/span><span data-tagBracket>\/<\/span><span data-tagName>script)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightJs(capture2) + capture3);
+		code = code.replace(/(script.*<\/span><span data-code-tagBracket>&gt;<\/span>)(.*)(<span data-code-tagBracket>&lt;<\/span><span data-code-tagBracket>\/<\/span><span data-code-tagName>script)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightJs(capture2) + capture3);
 
 		function htmlSegment(match, capture, index){
 			let originalInStyle = inStyle,
 				originalInScript = inScript,
-				replaced = "<span data-tagBracket>&lt;</span>";
+				replaced = "<span data-code-tagBracket>&lt;</span>";
 			replaced += htmlTag(capture);
-			replaced += "<span data-tagBracket>&gt;</span>";
+			replaced += "<span data-code-tagBracket>&gt;</span>";
 			//if we've only just entered <style> or <script>
 			//be sure to include the actual <style> or <script> tag first,
 			//otherwise ignore any matches not actually in html
@@ -175,7 +175,7 @@ comments are detected.
 				replaced = "";
 			//slash
 			if (tag[0] === "/"){
-				replaced += "<span data-tagBracket>/</span>";
+				replaced += "<span data-code-tagBracket>/</span>";
 				tag = tag.slice(1);
 			}
 			//tag name
@@ -188,66 +188,66 @@ comments are detected.
 				tagName = tag;
 				tag = "";
 			}
-			replaced += "<span data-tagName>" + tagName + "</span>";
+			replaced += "<span data-code-tagName>" + tagName + "</span>";
 			if (tagName.toLowerCase() === "style") inStyle = !inStyle;
 			if (tagName.toLowerCase() === "script") inScript = !inScript;
 			return replaced + htmlAttributes(tag);
 		}
 		function htmlAttributes(attributes){
 			if (!attributes.trim().length) return "";
-			let replaced = "<span data-attributeName>";
+			let replaced = "<span data-code-attributeName>";
             replaced += attributes.replace(/(=.*)/g, htmlAttributeValue);
             replaced += "</span>";
 			return replaced;
 		}
         function htmlAttributeValue(match, value){
-            return "<span data-attributeEqual>=</span><span data-attributeValue>" + value.slice(1) + "</span>";
+            return "<span data-code-attributeEqual>=</span><span data-code-attributeValue>" + value.slice(1) + "</span>";
         }
 
-		for (let prop in color){
-			let regex = new RegExp("data\-" + prop, "gi");
-			code = code.replace(regex, "style=color:" + color[prop] + ";");
-		}
+		// for (let prop in color){
+		// 	let regex = new RegExp("data\-" + prop, "gi");
+		// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
+		// }
 
 		return code;
 	}
 
     /*********** CSS HIGHLIGHTING *************/
 	function highlightCss(code){
-		let color = highlightSettings.css;
+		// let color = highlightSettings.css;
 
 		//rulesets
 		code = code.replace(/([^{}]*){([^{}]*)}/g, cssRuleSet);
 		//default (for @ lines)
-		code = "<span data-atLine>" + code + "</span>";
+		code = "<span data-code-atLine>" + code + "</span>";
 		//@word (@media, @keyframes, @import, etc.)
-		code = code.replace(/(@\w+)/gi, "<span data-atWord>$1</span>");
+		code = code.replace(/(@\w+)/gi, "<span data-code-atWord>$1</span>");
 
 		function cssRuleSet(match, capture1, capture2, index){
-			return cssSelector(capture1) + "<span data-ruleSetCurlyBrace>{</span>" + cssRules(capture2) + "<span data-ruleSetCurlyBrace>}</span>";
+			return cssSelector(capture1) + "<span data-code-ruleSetCurlyBrace>{</span>" + cssRules(capture2) + "<span data-code-ruleSetCurlyBrace>}</span>";
 		}
 
 		function cssSelector(selector){
-			selector = selector.replace(/(\s[^\w\d]\s)/g, "<span data-selectorSyntax>$1</span>");
-			selector = selector.replace(/(#[\w\d-]+)/g, "<span data-selectorId>$1</span>");
-			selector = selector.replace(/(\.[\w\d-]+)/g, "<span data-selectorClass>$1</span>");
-			selector = selector.replace(/(:[\w\d]+)/g, "<span data-selectorPseudoClass>$1</span>");
-			selector = selector.replace(/\[(.*)\]/g, "<span data-selectorSquareBracket>[</span><span data-selectorAttribute>$1</span><span data-selectorSquareBracket>]</span>");
-			return "<span data-selectorDefault>" + selector + "</span>";
+			selector = selector.replace(/(\s[^\w\d]\s)/g, "<span data-code-selectorSyntax>$1</span>");
+			selector = selector.replace(/(#[\w\d-]+)/g, "<span data-code-selectorId>$1</span>");
+			selector = selector.replace(/(\.[\w\d-]+)/g, "<span data-code-selectorClass>$1</span>");
+			selector = selector.replace(/(:[\w\d]+)/g, "<span data-code-selectorPseudoClass>$1</span>");
+			selector = selector.replace(/\[(.*)\]/g, "<span data-code-selectorSquareBracket>[</span><span data-code-selectorAttribute>$1</span><span data-code-selectorSquareBracket>]</span>");
+			return "<span data-code-selectorDefault>" + selector + "</span>";
 		}
 
 		function cssRules(rules){
-			rules = rules.replace(/(.+):(.+)/g, "<span data-ruleName>$1</span><span data-ruleSyntax>:</span><span data-ruleValueDefault>$2</span>");
-			rules = rules.replace(/(\-?\d+\.?\d*\w*%?)/g, "<span data-ruleValueNumber>$1</span>");
-			rules = rules.replace(/([\(\),;])/g, "<span data-ruleSyntax>$1</span>");
-			rules = rules.replace(/!important/gi, "<span data-ruleImportant>!important</span>");
+			rules = rules.replace(/(.+):(.+)/g, "<span data-code-ruleName>$1</span><span data-code-ruleSyntax>:</span><span data-code-ruleValueDefault>$2</span>");
+			rules = rules.replace(/(\-?\d+\.?\d*\w*%?)/g, "<span data-code-ruleValueNumber>$1</span>");
+			rules = rules.replace(/([\(\),;])/g, "<span data-code-ruleSyntax>$1</span>");
+			rules = rules.replace(/!important/gi, "<span data-code-ruleImportant>!important</span>");
 			return rules;
 		}
 
-		for (let prop in color){
-			let regex = new RegExp("data\-" + prop, "gi");
-			code = code.replace(regex, "style=color:" + color[prop] + ";");
-		}
+		// for (let prop in color){
+		// 	let regex = new RegExp("data\-" + prop, "gi");
+		// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
+		// }
 
 		return code;
 	}
@@ -255,9 +255,9 @@ comments are detected.
     /*********** JAVASCRIPT HIGHLIGHTING *************/
     /*********** unfinished *************/
 	function highlightJs(code){
-		let reservedWords = ["abstract", "await", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete", "do", "double", "else", "enum", "export", "extends", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "typeof", "var", "void", "volatile", "while", "with", "yield"],
-			literals = ["false", "null", "true", "undefined"],
-            color = highlightSettings.js;
+		// let reservedWords = ["abstract", "await", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete", "do", "double", "else", "enum", "export", "extends", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "typeof", "var", "void", "volatile", "while", "with", "yield"],
+		// 	literals = ["false", "null", "true", "undefined"];
+            // color = highlightSettings.js;
 
         // for (let prop in color){
 		// 	let regex = new RegExp("data\-" + prop, "gi");
@@ -268,42 +268,40 @@ comments are detected.
 	}
 
 	/*********** COLORS *************/
-	const highlightSettings = {
-		html: {
-			tagBracket: "chocolate",
-			tagName: "tomato",
-			attributeName: "teal",
-			attributeEqual: "chocolate",
-			attributeValue: "mediumblue",
-			comment: "silver",
-            entity: "lime"
-		},
-		css: {
-			selectorDefault: "darkorchid",
-			selectorClass: "darkviolet",
-			selectorId: "darkmagenta",
-			selectorSyntax: "darkcyan",
-			selectorPseudoClass: "indianred",
-			selectorSquareBracket: "crimson",
-			selectorAttribute: "indianred",
-			ruleSetCurlyBrace: "darkcyan",
-			ruleName: "indigo",
-			ruleValueDefault: "mediumvioletred",
-			ruleValueNumber: "royalblue",
-			ruleSyntax: "maroon",
-			ruleImportant: "crimson",
-			atWord: "purple",
-			atLine: "hotpink",
-			comment: "grey"
-		},
-		js: {
-			default: "red",
-			reservedWord: "red",
-			literal: "red",
-			number: "red",
-			comment: "grey"
-		}
-	};
+	// const highlightSettings = {
+	// 	html: {
+	// 		tagBracket: "chocolate",
+	// 		tagName: "tomato",
+	// 		attributeName: "teal",
+	// 		attributeEqual: "chocolate",
+	// 		attributeValue: "mediumblue",
+    //         entity: "lime"
+	// 	},
+	// 	css: {
+	// 		selectorDefault: "darkorchid",
+	// 		selectorClass: "darkviolet",
+	// 		selectorId: "darkmagenta",
+	// 		selectorSyntax: "darkcyan",
+	// 		selectorPseudoClass: "indianred",
+	// 		selectorSquareBracket: "crimson",
+	// 		selectorAttribute: "indianred",
+	// 		ruleSetCurlyBrace: "darkcyan",
+	// 		ruleName: "indigo",
+	// 		ruleValueDefault: "mediumvioletred",
+	// 		ruleValueNumber: "royalblue",
+	// 		ruleSyntax: "maroon",
+	// 		ruleImportant: "crimson",
+	// 		atWord: "purple",
+	// 		atLine: "hotpink",
+	// 	},
+	// 	js: {
+	// 		default: "red",
+	// 		reservedWord: "red",
+	// 		literal: "red",
+	// 		number: "red",
+	// 		comment: "grey"
+	// 	}
+	// };
 
 	/************************/
 
