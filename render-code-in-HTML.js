@@ -61,21 +61,21 @@ comments are detected.
 
 */
 
-;(function(window){
-
-    //validate
-    if (!window) return;
-    if (!window.document || !window.document.documentElement){
-        if (window.console && "function" === typeof window.console.warn) console.warn("Browser document required for render-code.js");
-        return;
-    }
-
-    //settings
+// ;(function(window){
+//
+//     //validate
+//     if (!window) return;
+//     if (!window.document || !window.document.documentElement){
+//         if (window.console && "function" === typeof window.console.warn) console.warn("Browser document required for render-code.js");
+//         return;
+//     }
+//
+//     //settings
     const tagSelector = "pre code";
-
-    //init
-    window.document.addEventListener("DOMContentLoaded", init);
-	function init(){
+//
+//     //init
+//     window.document.addEventListener("DOMContentLoaded", init);
+	function renderCode(){
 		window.document.querySelectorAll(tagSelector).forEach(setup);
 	}
 
@@ -319,4 +319,6 @@ comments are detected.
 
 	/************************/
 
-})(window);
+// })(window);
+
+export { renderCode };

@@ -13,6 +13,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Rubik+Dirt&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="assets/css/main.css" />
         <link rel="stylesheet" href="assets/css/footernav.css" />
+        <link rel="stylesheet" href="render-code-in-HTML.css" />
         <script defer type="module" src="assets/js/main.js"></script>
     </head>
     <body>
@@ -22,7 +23,25 @@
             <h3>Adapted from my 2008 legacy code, this tool reads HTML comments using JavaScript (yup!) and renders them as code directly in the page. No more typing out <code>&amp;gt;</code> and <code>&amp;lt;</code> or other hacks!</h3>
         </header>
         <main>
+            <pre data-syntax="html"><code>
+<!--
+<h1 id="test">Test!</h1>
+-->
+            </code></pre>
 
+            <pre data-syntax="css"><code>
+<!--
+pre {
+    font-family: monospace;
+}
+-->
+            </code></pre>
+
+            <pre data-syntax="js"><code>
+<!--
+console.log("It works!");
+-->
+            </code></pre>
         </main>
         <footer>
             <nav>

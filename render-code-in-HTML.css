@@ -1,30 +1,33 @@
 /* HTML */
-.data-code-tagBracket { color: "chocolate"; }
-.data-code-tagName { color: "tomato"; }
-.data-code-attributeName { color: "teal"; }
-.data-code-attributeEqual { color: "chocolate"; }
-.data-code-attributeValue { color: "mediumblue"; }
-.data-code-entity { color: "lime"; }
+[data-code-tagBracket] { color: chocolate; }
+[data-code-tagName] { color: tomato; }
+[data-code-attributeName] { color: teal; }
+[data-code-attributeEqual] { color: chocolate; }
+[data-code-attributeValue] { color: mediumblue; }
+[data-code-entity] { color: lime; }
 /* CSS */
-.data-code-selectorDefault { color: "darkorchid"; }
-.data-code-selectorClass { color: "darkviolet"; }
-.data-code-selectorId { color: "darkmagenta"; }
-.data-code-selectorSyntax { color: "darkcyan"; }
-.data-code-selectorPseudoClass { color: "indianred"; }
-.data-code-selectorSquareBracket { color: "crimson"; }
-.data-code-selectorAttribute { color: "indianred"; }
-.data-code-ruleSetCurlyBrace { color: "darkcyan"; }
-.data-code-ruleName { color: "indigo"; }
-.data-code-ruleValueDefault { color: "mediumvioletred"; }
-.data-code-ruleValueNumber { color: "royalblue"; }
-.data-code-ruleSyntax { color: "maroon"; }
-.data-code-ruleImportant { color: "crimson"; }
-.data-code-atWord { color: "purple"; }
-.data-code-atLine { color: "hotpink"; }
+[data-code-selectorDefault] { color: darkorchid; }
+[data-code-selectorClass] { color: darkviolet; }
+[data-code-selectorId] { color: darkmagenta; }
+[data-code-selectorSyntax] { color: darkcyan; }
+[data-code-selectorPseudoClass] { color: indianred; }
+[data-code-selectorSquareBracket] { color: crimson; }
+[data-code-selectorAttribute] { color: indianred; }
+[data-code-ruleSetCurlyBrace] { color: darkcyan; }
+[data-code-ruleName] { color: indigo; }
+[data-code-ruleValueDefault] { color: mediumvioletred; }
+[data-code-ruleValueNumber] { color: royalblue; }
+[data-code-ruleSyntax] { color: maroon; }
+[data-code-ruleImportant] { color: crimson; }
+[data-code-atWord] { color: purple; }
+[data-code-atLine] { color: hotpink; }
 /* JS */
-.data-code-default { color: "red"; }
-.data-code-reservedWord { color: "red"; }
-.data-code-literal { color: "red"; }
-.data-code-number { color: "red"; }
+[data-code-default] { color: red; }
+[data-code-reservedWord] { color: red; }
+[data-code-literal] { color: red; }
+[data-code-number] { color: red; }
 /* common */
-.data-code-comment { color: "grey"; }
+[data-code-comment] { color: grey; }
+
+/*testing*/
+pre { background: white; padding: 10px; text-align: left; }
