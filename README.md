@@ -1,20 +1,20 @@
-# Render Code in HTML
+# Render Code in HTML (WIP)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-
-## Author
-
-[Ian Marshall](https://ianjstutor.github.io/ian-marshall/)
-
-## Live Site
-
-> [https://ianjstutor.github.io/render-code-in-HTML/](https://ianjstutor.github.io/render-code-in-HTML/)
 
 ## Description
 
 An interesting approach to displaying code snippets in HTML. Who knew you could access HTML comments using JavaScript?
 
 Built with vanilla JavaScript, my favorite flavor!
+
+## Author
+
+> [Ian Marshall](https://ianjstutor.github.io/ian-marshall/)
+
+## Live Site
+
+> [https://ianjstutor.github.io/render-code-in-HTML/](https://ianjstutor.github.io/render-code-in-HTML/)
 
 ## History
 

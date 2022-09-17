@@ -214,8 +214,7 @@ function highlightHtml(code){
 
 /*********** CSS HIGHLIGHTING *************/
 function highlightCss(code){
-	// let color = highlightSettings.css;
-
+	console.log(code);
 	//rulesets
 	code = code.replace(/([^{}]*){([^{}]*)}/g, cssRuleSet);
 	//default (for @ lines)
@@ -257,9 +256,9 @@ function highlightCss(code){
 function highlightJs(code, formattedCode){
 
     if (window.esprima) {
-        console.log(code);
+        // console.log(code);
         const syntaxArray = esprima.tokenize(code);
-        console.log(syntaxArray);
+        // console.log(syntaxArray);
     }
 
 	return formattedCode;
