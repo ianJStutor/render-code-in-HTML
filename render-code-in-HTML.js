@@ -61,264 +61,209 @@ comments are detected.
 
 */
 
-// ;(function(window){
-//
-//     //validate
-//     if (!window) return;
-//     if (!window.document || !window.document.documentElement){
-//         if (window.console && "function" === typeof window.console.warn) console.warn("Browser document required for render-code.js");
-//         return;
-//     }
-//
-//     //settings
-    const tagSelector = "pre code";
-//
-//     //init
-//     window.document.addEventListener("DOMContentLoaded", init);
-	function renderCode(){
-		window.document.querySelectorAll(tagSelector).forEach(setup);
+function renderCode(tagSelector = "pre code"){
+	window.document.querySelectorAll(tagSelector).forEach(setup);
+}
+
+function setup(tag){
+	var originalTag = tag,
+        originalCode = tag.childNodes[1].textContent.trim(),
+        bracketedCode = originalCode
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;"),
+        code = "<div style='min-height:1.15em;'>" + bracketedCode
+                .split(/[\r\n]/)
+                .join("</div><div style='min-height:1.15em;'>") + "</div>",
+        addLineNumbers = tag.parentElement.hasAttribute("data-lineNumbers"),
+		addSyntax = tag.parentElement.hasAttribute("data-syntax"),
+		addCopyable = tag.parentElement.hasAttribute("data-copyable");
+
+    /* LINE NUMBERS */
+	if (addLineNumbers){
+        var numLines = originalCode.split(/[\r\n]/).length,
+            lineNumbers = (function(){
+                let dataLineNum = +tag.parentElement.getAttribute("data-lineNumbers"),
+					startingNum = dataLineNum || 1,
+                    html = `<section style="float:left;padding-right:5px;border-right:1px solid black;margin-right:10px;text-align:right;user-select:none;">`;
+                for (let i=startingNum; i<startingNum+numLines; i++){
+                    html += "<div style='min-height:1.15em;'>" + i + "</div>";
+                }
+                html += "</section><section></section>";
+                return html;
+            })();
+        tag.innerHTML = lineNumbers;
+        tag = tag.querySelector("section:last-child");
+    }
+
+    /* SYNTAX HIGHLIGHTING */
+    if (addSyntax){
+		let syntax = originalTag.parentElement.getAttribute("data-syntax").trim().toLowerCase();
+		if (syntax.includes("html")) code = highlightHtml(code); //HTML, and embedded CSS and JS
+		else if (syntax.includes("css")) code = highlightCss(code);
+		else if (syntax.includes("js")) code = highlightJs(originalCode, code);
 	}
 
-	function setup(tag){
-		var originalTag = tag,
-            originalCode = tag.childNodes[1].textContent
-					.trim()
-					.replace(/&/g, "&amp;")
-					.replace(/</g, "&lt;")
-					.replace(/>/g, "&gt;"),
-            code = "<div style='min-height:1.15em;'>" + originalCode
-                    .split(/[\r\n]/)
-                    .join("</div><div style='min-height:1.15em;'>") + "</div>",
-            addLineNumbers = tag.parentElement.hasAttribute("data-lineNumbers"),
-			addSyntax = tag.parentElement.hasAttribute("data-syntax"),
-			addCopyable = tag.parentElement.hasAttribute("data-copyable");
+    //insert formatted code
+    tag.innerHTML = code;
 
-        /* LINE NUMBERS */
-		if (addLineNumbers){
-            var numLines = originalCode.split(/[\r\n]/).length,
-                lineNumbers = (function(){
-                    let dataLineNum = +tag.parentElement.getAttribute("data-lineNumbers"),
-						startingNum = dataLineNum || 1,
-                        html = `<section style="float:left;padding-right:5px;border-right:1px solid black;margin-right:10px;text-align:right;user-select:none;">`;
-                    for (let i=startingNum; i<startingNum+numLines; i++){
-                        html += "<div style='min-height:1.15em;'>" + i + "</div>";
-                    }
-                    html += "</section><section></section>";
-                    return html;
-                })();
-            tag.innerHTML = lineNumbers;
-            tag = tag.querySelector("section:last-child");
-        }
+    /* COPY CODE TO CLIPBOARD BUTTON */
+	if (addCopyable){
+		originalTag.parentElement.outerHTML += "<button id='copyCodeToClipboardButton'>Copy to Clipboard</button>";
+		let button = window.document.querySelector("#copyCodeToClipboardButton");
+		button.removeAttribute("id");
+		button.addEventListener("click", copyCodeToClipboard);
+	}
+}
 
-        /* SYNTAX HIGHLIGHTING */
-        if (addSyntax){
-			let syntax = originalTag.parentElement.getAttribute("data-syntax").trim().toLowerCase();
-			if (syntax.includes("html")) code = highlightHtml(code); //HTML, and embedded CSS and JS
-			else if (syntax.includes("css")) code = highlightCss(code);
-			else if (syntax.includes("js")) code = highlightJs(code);
+function copyCodeToClipboard(e){
+	let textarea = window.document.createElement("textarea"),
+        codeEl = e.target.previousElementSibling.querySelector("section:last-child") ||
+                 e.target.previousElementSibling,
+        html = codeEl.innerHTML.replace(/<\/div>/g, "</div>\n"),
+        div = window.document.createElement("div");
+    div.innerHTML = html;
+    let text = div.textContent;
+    text = text.replace(/<!––/g, "<!--").replace(/––>/g, "-->");
+	textarea.value = text;
+	window.document.body.appendChild(textarea);
+	textarea.select();
+	try {
+		if (window.document.execCommand("copy")) e.target.textContent = "Copied!";
+		else e.target.textContent = "Copy Failed";
+	}
+	catch (err){
+		e.target.textContent = "Copy Failed";
+	}
+	window.document.body.removeChild(textarea);
+	//return button text to normal after five seconds
+	setTimeout(() => {
+		e.target.textContent = "Copy to Clipboard";
+	}, 5000);
+}
+
+/*********** HTML HIGHLIGHTING *************/
+function highlightHtml(code){
+	// let color = highlightSettings.html,
+	let inStyle = false,
+		inScript = false;
+
+	//tags (non-greedy matching)
+    code = code.replace(/&lt;(.*?)&gt;/g, htmlSegment);
+	//comments (looking for n-dashes, see notes above)
+	code = code.replace(/&lt;!––(.+)––&gt;/g, "<span data-code-comment>&lt;!--$1--&gt;</span>");
+	//css
+	code = code.replace(/(style.*<\/span><span data-code-tagBracket>&gt;<\/span>)(.*)(<span data-code-tagBracket>&lt;<\/span><span data-code-tagBracket>\/<\/span><span data-code-tagName>style)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightCss(capture2) + capture3);
+	//javascript
+	code = code.replace(/(script.*<\/span><span data-code-tagBracket>&gt;<\/span>)(.*)(<span data-code-tagBracket>&lt;<\/span><span data-code-tagBracket>\/<\/span><span data-code-tagName>script)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightJs(capture2) + capture3);
+
+	function htmlSegment(match, capture, index){
+		let originalInStyle = inStyle,
+			originalInScript = inScript,
+			replaced = "<span data-code-tagBracket>&lt;</span>";
+		replaced += htmlTag(capture);
+		replaced += "<span data-code-tagBracket>&gt;</span>";
+		//if we've only just entered <style> or <script>
+		//be sure to include the actual <style> or <script> tag first,
+		//otherwise ignore any matches not actually in html
+		if (inStyle && originalInStyle) return match;
+		if (inScript && originalInScript) return match;
+		return replaced;
+	}
+	function htmlTag(tag){
+		let originalTag = tag,
+			replaced = "";
+		//slash
+		if (tag[0] === "/"){
+			replaced += "<span data-code-tagBracket>/</span>";
+			tag = tag.slice(1);
 		}
-
-        //insert formatted code
-        tag.innerHTML = code;
-
-        /* COPY CODE TO CLIPBOARD BUTTON */
-		if (addCopyable){
-			originalTag.parentElement.outerHTML += "<button id='copyCodeToClipboardButton'>Copy to Clipboard</button>";
-			let button = window.document.querySelector("#copyCodeToClipboardButton");
-			button.removeAttribute("id");
-			button.addEventListener("click", copyCodeToClipboard);
+		//tag name
+		let tagName;
+		if (tag.includes(" ")){
+			tagName = tag.slice(0, tag.indexOf(" "));
+			tag = tag.slice(tag.indexOf(" "));
 		}
+		else {
+			tagName = tag;
+			tag = "";
+		}
+		replaced += "<span data-code-tagName>" + tagName + "</span>";
+		if (tagName.toLowerCase() === "style") inStyle = !inStyle;
+		if (tagName.toLowerCase() === "script") inScript = !inScript;
+		return replaced + htmlAttributes(tag);
+	}
+	function htmlAttributes(attributes){
+		if (!attributes.trim().length) return "";
+		let replaced = "<span data-code-attributeName>";
+        replaced += attributes.replace(/(=.*)/g, htmlAttributeValue);
+        replaced += "</span>";
+		return replaced;
+	}
+    function htmlAttributeValue(match, value){
+        return "<span data-code-attributeEqual>=</span><span data-code-attributeValue>" + value.slice(1) + "</span>";
+    }
+
+	// for (let prop in color){
+	// 	let regex = new RegExp("data\-" + prop, "gi");
+	// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
+	// }
+
+	return code;
+}
+
+/*********** CSS HIGHLIGHTING *************/
+function highlightCss(code){
+	// let color = highlightSettings.css;
+
+	//rulesets
+	code = code.replace(/([^{}]*){([^{}]*)}/g, cssRuleSet);
+	//default (for @ lines)
+	code = "<span data-code-atLine>" + code + "</span>";
+	//@word (@media, @keyframes, @import, etc.)
+	code = code.replace(/(@\w+)/gi, "<span data-code-atWord>$1</span>");
+
+	function cssRuleSet(match, capture1, capture2, index){
+		return cssSelector(capture1) + "<span data-code-ruleSetCurlyBrace>{</span>" + cssRules(capture2) + "<span data-code-ruleSetCurlyBrace>}</span>";
 	}
 
-    function copyCodeToClipboard(e){
-		let textarea = window.document.createElement("textarea"),
-            codeEl = e.target.previousElementSibling.querySelector("section:last-child") ||
-                     e.target.previousElementSibling,
-            html = codeEl.innerHTML.replace(/<\/div>/g, "</div>\n"),
-            div = window.document.createElement("div");
-        div.innerHTML = html;
-        let text = div.textContent;
-        text = text.replace(/<!––/g, "<!--").replace(/––>/g, "-->");
-		textarea.value = text;
-		window.document.body.appendChild(textarea);
-		textarea.select();
-		try {
-			if (window.document.execCommand("copy")) e.target.textContent = "Copied!";
-			else e.target.textContent = "Copy Failed";
-		}
-		catch (err){
-			e.target.textContent = "Copy Failed";
-		}
-		window.document.body.removeChild(textarea);
-		//return button text to normal after five seconds
-		setTimeout(() => {
-			e.target.textContent = "Copy to Clipboard";
-		}, 5000);
+	function cssSelector(selector){
+		selector = selector.replace(/(\s[^\w\d]\s)/g, "<span data-code-selectorSyntax>$1</span>");
+		selector = selector.replace(/(#[\w\d-]+)/g, "<span data-code-selectorId>$1</span>");
+		selector = selector.replace(/(\.[\w\d-]+)/g, "<span data-code-selectorClass>$1</span>");
+		selector = selector.replace(/(:[\w\d]+)/g, "<span data-code-selectorPseudoClass>$1</span>");
+		selector = selector.replace(/\[(.*)\]/g, "<span data-code-selectorSquareBracket>[</span><span data-code-selectorAttribute>$1</span><span data-code-selectorSquareBracket>]</span>");
+		return "<span data-code-selectorDefault>" + selector + "</span>";
 	}
 
-    /*********** HTML HIGHLIGHTING *************/
-    function highlightHtml(code){
-		// let color = highlightSettings.html,
-		let inStyle = false,
-			inScript = false;
-
-		//tags (non-greedy matching)
-        code = code.replace(/&lt;(.*?)&gt;/g, htmlSegment);
-		//comments (looking for n-dashes, see notes above)
-		code = code.replace(/&lt;!––(.+)––&gt;/g, "<span data-code-comment>&lt;!--$1--&gt;</span>");
-		//css
-		code = code.replace(/(style.*<\/span><span data-code-tagBracket>&gt;<\/span>)(.*)(<span data-code-tagBracket>&lt;<\/span><span data-code-tagBracket>\/<\/span><span data-code-tagName>style)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightCss(capture2) + capture3);
-		//javascript
-		code = code.replace(/(script.*<\/span><span data-code-tagBracket>&gt;<\/span>)(.*)(<span data-code-tagBracket>&lt;<\/span><span data-code-tagBracket>\/<\/span><span data-code-tagName>script)/gi, (match, capture1, capture2, capture3, index) => capture1 + highlightJs(capture2) + capture3);
-
-		function htmlSegment(match, capture, index){
-			let originalInStyle = inStyle,
-				originalInScript = inScript,
-				replaced = "<span data-code-tagBracket>&lt;</span>";
-			replaced += htmlTag(capture);
-			replaced += "<span data-code-tagBracket>&gt;</span>";
-			//if we've only just entered <style> or <script>
-			//be sure to include the actual <style> or <script> tag first,
-			//otherwise ignore any matches not actually in html
-			if (inStyle && originalInStyle) return match;
-			if (inScript && originalInScript) return match;
-			return replaced;
-		}
-		function htmlTag(tag){
-			let originalTag = tag,
-				replaced = "";
-			//slash
-			if (tag[0] === "/"){
-				replaced += "<span data-code-tagBracket>/</span>";
-				tag = tag.slice(1);
-			}
-			//tag name
-			let tagName;
-			if (tag.includes(" ")){
-				tagName = tag.slice(0, tag.indexOf(" "));
-				tag = tag.slice(tag.indexOf(" "));
-			}
-			else {
-				tagName = tag;
-				tag = "";
-			}
-			replaced += "<span data-code-tagName>" + tagName + "</span>";
-			if (tagName.toLowerCase() === "style") inStyle = !inStyle;
-			if (tagName.toLowerCase() === "script") inScript = !inScript;
-			return replaced + htmlAttributes(tag);
-		}
-		function htmlAttributes(attributes){
-			if (!attributes.trim().length) return "";
-			let replaced = "<span data-code-attributeName>";
-            replaced += attributes.replace(/(=.*)/g, htmlAttributeValue);
-            replaced += "</span>";
-			return replaced;
-		}
-        function htmlAttributeValue(match, value){
-            return "<span data-code-attributeEqual>=</span><span data-code-attributeValue>" + value.slice(1) + "</span>";
-        }
-
-		// for (let prop in color){
-		// 	let regex = new RegExp("data\-" + prop, "gi");
-		// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
-		// }
-
-		return code;
+	function cssRules(rules){
+		rules = rules.replace(/(.+):(.+)/g, "<span data-code-ruleName>$1</span><span data-code-ruleSyntax>:</span><span data-code-ruleValueDefault>$2</span>");
+		rules = rules.replace(/(\-?\d+\.?\d*\w*%?)/g, "<span data-code-ruleValueNumber>$1</span>");
+		rules = rules.replace(/([\(\),;])/g, "<span data-code-ruleSyntax>$1</span>");
+		rules = rules.replace(/!important/gi, "<span data-code-ruleImportant>!important</span>");
+		return rules;
 	}
 
-    /*********** CSS HIGHLIGHTING *************/
-	function highlightCss(code){
-		// let color = highlightSettings.css;
+	// for (let prop in color){
+	// 	let regex = new RegExp("data\-" + prop, "gi");
+	// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
+	// }
 
-		//rulesets
-		code = code.replace(/([^{}]*){([^{}]*)}/g, cssRuleSet);
-		//default (for @ lines)
-		code = "<span data-code-atLine>" + code + "</span>";
-		//@word (@media, @keyframes, @import, etc.)
-		code = code.replace(/(@\w+)/gi, "<span data-code-atWord>$1</span>");
+	return code;
+}
 
-		function cssRuleSet(match, capture1, capture2, index){
-			return cssSelector(capture1) + "<span data-code-ruleSetCurlyBrace>{</span>" + cssRules(capture2) + "<span data-code-ruleSetCurlyBrace>}</span>";
-		}
+/*********** JAVASCRIPT HIGHLIGHTING *************/
+/*********** unfinished *************/
+function highlightJs(code, formattedCode){
 
-		function cssSelector(selector){
-			selector = selector.replace(/(\s[^\w\d]\s)/g, "<span data-code-selectorSyntax>$1</span>");
-			selector = selector.replace(/(#[\w\d-]+)/g, "<span data-code-selectorId>$1</span>");
-			selector = selector.replace(/(\.[\w\d-]+)/g, "<span data-code-selectorClass>$1</span>");
-			selector = selector.replace(/(:[\w\d]+)/g, "<span data-code-selectorPseudoClass>$1</span>");
-			selector = selector.replace(/\[(.*)\]/g, "<span data-code-selectorSquareBracket>[</span><span data-code-selectorAttribute>$1</span><span data-code-selectorSquareBracket>]</span>");
-			return "<span data-code-selectorDefault>" + selector + "</span>";
-		}
+    if (window.esprima) {
+        console.log(code);
+        const syntaxArray = esprima.tokenize(code);
+        console.log(syntaxArray);
+    }
 
-		function cssRules(rules){
-			rules = rules.replace(/(.+):(.+)/g, "<span data-code-ruleName>$1</span><span data-code-ruleSyntax>:</span><span data-code-ruleValueDefault>$2</span>");
-			rules = rules.replace(/(\-?\d+\.?\d*\w*%?)/g, "<span data-code-ruleValueNumber>$1</span>");
-			rules = rules.replace(/([\(\),;])/g, "<span data-code-ruleSyntax>$1</span>");
-			rules = rules.replace(/!important/gi, "<span data-code-ruleImportant>!important</span>");
-			return rules;
-		}
+	return formattedCode;
+}
 
-		// for (let prop in color){
-		// 	let regex = new RegExp("data\-" + prop, "gi");
-		// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
-		// }
-
-		return code;
-	}
-
-    /*********** JAVASCRIPT HIGHLIGHTING *************/
-    /*********** unfinished *************/
-	function highlightJs(code){
-		// let reservedWords = ["abstract", "await", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "debugger", "default", "delete", "do", "double", "else", "enum", "export", "extends", "final", "finally", "float", "for", "function", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "typeof", "var", "void", "volatile", "while", "with", "yield"],
-		// 	literals = ["false", "null", "true", "undefined"];
-            // color = highlightSettings.js;
-
-        // for (let prop in color){
-		// 	let regex = new RegExp("data\-" + prop, "gi");
-		// 	code = code.replace(regex, "style=color:" + color[prop] + ";");
-		// }
-
-		return code;
-	}
-
-	/*********** COLORS *************/
-	// const highlightSettings = {
-	// 	html: {
-	// 		tagBracket: "chocolate",
-	// 		tagName: "tomato",
-	// 		attributeName: "teal",
-	// 		attributeEqual: "chocolate",
-	// 		attributeValue: "mediumblue",
-    //         entity: "lime"
-	// 	},
-	// 	css: {
-	// 		selectorDefault: "darkorchid",
-	// 		selectorClass: "darkviolet",
-	// 		selectorId: "darkmagenta",
-	// 		selectorSyntax: "darkcyan",
-	// 		selectorPseudoClass: "indianred",
-	// 		selectorSquareBracket: "crimson",
-	// 		selectorAttribute: "indianred",
-	// 		ruleSetCurlyBrace: "darkcyan",
-	// 		ruleName: "indigo",
-	// 		ruleValueDefault: "mediumvioletred",
-	// 		ruleValueNumber: "royalblue",
-	// 		ruleSyntax: "maroon",
-	// 		ruleImportant: "crimson",
-	// 		atWord: "purple",
-	// 		atLine: "hotpink",
-	// 	},
-	// 	js: {
-	// 		default: "red",
-	// 		reservedWord: "red",
-	// 		literal: "red",
-	// 		number: "red",
-	// 		comment: "grey"
-	// 	}
-	// };
-
-	/************************/
-
-// })(window);
 
 export { renderCode };
